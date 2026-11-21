@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const postRoutes = require('./routes/postRoutes');
 
 const app = express();
@@ -22,17 +23,34 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/posts', postRoutes);
 
-// Root route
-app.get('/', (req, res) => {
-  res.send('MERN Blog Application API is running successfully.');
-});
+// In production, serve the compiled React frontend from frontend/dist
+const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
+const fs = require('fs');
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint not found'
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+
+  app.get('*', (req, res) => {
+    // If request does not start with /api, serve the React app index.html
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(frontendDistPath, 'index.html'));
+    } else {
+      res.status(404).json({ success: false, message: 'API endpoint not found' });
+    }
   });
-});
+} else {
+  // Root fallback if frontend is not built
+  app.get('/', (req, res) => {
+    res.send('MERN Blog Application API is running successfully.');
+  });
+
+  // 404 handler for API routes
+  app.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      message: 'Endpoint not found'
+    });
+  });
+}
 
 module.exports = app;

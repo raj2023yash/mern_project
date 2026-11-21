@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-// Get base URL from environment or default to local backend URL /api
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// Automatically determine base URL:
+// 1. Explicit env variable if defined (VITE_API_BASE_URL)
+// 2. http://localhost:5000/api if running Vite dev server locally on port 3000
+// 3. Relative '/api' if deployed to cloud or served unified
+const defaultUrl = (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '3000')
+  ? 'http://localhost:5000/api'
+  : '/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || defaultUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
